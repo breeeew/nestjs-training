@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Boardings</title>
+  <meta charset="utf-8">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+  <script>
+    const socket = io('http://localhost:3000');
+    socket.on('connect', () => {
+      socket.on('userStatistics', (data) => {
+        if (!data) {
+          return;
+        }
+        document.querySelector('.js-user-name').innerHTML = `${data.name}, ${data._id}`;
+        document.querySelector('.js-user-distance').innerHTML = data.distance;
+        document.querySelector('.js-user-hours').innerHTML = data.hours;
+      });
+      socket.on('boarding', (data) => {
+        if (!data) {
+          return;
+        }
+        document.querySelector('.js-user-last-checked').innerHTML = data.name;
+      });
+      socket.emit('map');
+      socket.emit('boarding');
+    });
+  </script>
+</head>
+<body>
+  <button type="button" class="js-generate-mock">Generate mock data</button>
+
+  <hr/>
+
+  <div>Name: <span class="js-user-name"></span></div>
+  <div>Distance: <span class="js-user-distance"></span></div>
+  <div>Hours: <span class="js-user-hours"></span></div>
+
+  <hr/>
+  <div>
+    Last checked: <span class="js-user-last-checked"></span>
+  </div>
+  <hr/>
+
+  <div>
+    Generate image for ID: <input type="text" class="js-input"/> <button type="button" class="js-button">Generate!</button>
+    <div>
+      <img class="js-qr-code"/>
+    </div>
+  </div>
+
+  <hr/>
+
+  <div>
+    <div>Check your Ticket</div>
+    <div>Invite ID: <input type="text" class="js-invite-input"/></div>
+    <div>
+      User ID: <input type="text" class="js-user-input"/>
+      <button type="button" class="js-check-button">Check!</button>
+    </div>
+
+    <div class="js-result"></div>
+  </div>
+<script type="application/javascript">
+  const genMockButton = document.querySelector('.js-generate-mock');
+  genMockButton.addEventListener('click', () => {
+    axios.get('/users/mock');
+  });
+
+  const button = document.querySelector('.js-button');
+  button.addEventListener('click', async () => {
+    const input = document.querySelector('.js-input');
+    const response = await axios.post('/boarding/gen', {
+      id: input.value,
+    }, {
+      responseType: 'arraybuffer',
+    });
+
+    const urlObj = URL.createObjectURL(new File([response.data], 'image.png'));
+    document.querySelector('.js-qr-code').setAttribute('src', urlObj);
+  });
+
+  const checkButton = document.querySelector('.js-check-button');
+  checkButton.addEventListener('click', async () => {
+    try {
+      const input = document.querySelector('.js-invite-input');
+      const userInput = document.querySelector('.js-user-input');
+      const response = await axios.post('/boarding/check', {
+        id: userInput.value,
+        code: input.value,
+      });
+
+      document.querySelector('.js-result').innerHTML = JSON.stringify(response.data, null, 4);
+    } catch (e) {
+      document.querySelector('.js-result').innerHTML = e.stack;
+    }
+  });
+</script>
+</body>
+</html>

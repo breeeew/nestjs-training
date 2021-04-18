@@ -1,0 +1,37 @@
+version: '3.7'
+
+networks:
+  web-watcher:
+    driver: bridge
+
+volumes:
+  backend:
+  mongo:
+
+services:
+  mongo:
+    image: 'mongo:latest'
+    container_name: mongo
+    volumes:
+      - mongo:/data/db
+    networks:
+      - web-watcher
+
+    ports:
+      - 27017:27017
+    command: --serviceExecutor adaptive --wiredTigerCacheSizeGB 1.5 --bind_ip mongo --noauth
+
+  backend:
+    build:
+      context: ./
+    volumes:
+      - type: bind
+        source: ./
+        target: /opt/app
+        consistency: cached
+    depends_on:
+      - mongo
+    ports:
+      - 3000:3000
+    networks:
+      - web-watcher
