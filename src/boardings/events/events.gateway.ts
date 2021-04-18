@@ -29,7 +29,9 @@ export class EventsGateway implements OnGatewayDisconnect {
 
   sendLastChecked(user: User) {
     for (const client of this.lastCheckedClients) {
-      client.emit('boarding', user);
+      if (!client.disconnected) {
+        client.emit('boarding', user);
+      }
     }
   }
 
